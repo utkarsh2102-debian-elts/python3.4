@@ -1,0 +1,124 @@
+# DP: Do not add /usr/lib/pythonXY.zip on sys.path.
+
+Index: b/Modules/getpath.c
+===================================================================
+--- a/Modules/getpath.c
++++ b/Modules/getpath.c
+@@ -470,7 +470,9 @@ calculate_path(void)
+     wchar_t *path = NULL;
+     wchar_t *prog = Py_GetProgramName();
+     wchar_t argv0_path[MAXPATHLEN+1];
++#ifdef WITH_ZIP_PATH
+     wchar_t zip_path[MAXPATHLEN+1];
++#endif
+     int pfound, efound; /* 1 if found; -1 if found build directory */
+     wchar_t *buf;
+     size_t bufsz;
+@@ -675,6 +677,7 @@ calculate_path(void)
+     else
+         reduce(prefix);
+ 
++#ifdef WITH_ZIP_PATH
+     wcsncpy(zip_path, prefix, MAXPATHLEN);
+     zip_path[MAXPATHLEN] = L'\0';
+     if (pfound > 0) { /* Use the reduced prefix returned by Py_GetPrefix() */
+@@ -687,6 +690,7 @@ calculate_path(void)
+     bufsz = wcslen(zip_path);   /* Replace "00" with version */
+     zip_path[bufsz - 6] = VERSION[0];
+     zip_path[bufsz - 5] = VERSION[2];
++#endif
+ 
+     efound = search_for_exec_prefix(argv0_path, home,
+                                     _exec_prefix, lib_python);
+@@ -732,7 +736,9 @@ calculate_path(void)
+         defpath = delim + 1;
+     }
+ 
++#ifdef WITH_ZIP_PATH
+     bufsz += wcslen(zip_path) + 1;
++#endif
+     bufsz += wcslen(exec_prefix) + 1;
+ 
+     buf = (wchar_t *)PyMem_Malloc(bufsz * sizeof(wchar_t));
+@@ -749,9 +755,11 @@ calculate_path(void)
+     else
+         buf[0] = '\0';
+ 
++#ifdef WITH_ZIP_PATH
+     /* Next is the default zip path */
+     wcscat(buf, zip_path);
+     wcscat(buf, delimiter);
++#endif
+ 
+     /* Next goes merge of compile-time $PYTHONPATH with
+      * dynamically located prefix.
+Index: b/Lib/test/test_cmd_line_script.py
+===================================================================
+--- a/Lib/test/test_cmd_line_script.py
++++ b/Lib/test/test_cmd_line_script.py
+@@ -256,11 +256,6 @@ class CmdLineTest(unittest.TestCase):
+                                script_dir, '',
+                                importlib.machinery.SourcelessFileLoader)
+ 
+-    def test_directory_error(self):
+-        with temp_dir() as script_dir:
+-            msg = "can't find '__main__' module in %r" % script_dir
+-            self._check_import_error(script_dir, msg)
+-
+     def test_zipfile(self):
+         with temp_dir() as script_dir:
+             script_name = _make_test_script(script_dir, '__main__')
+@@ -276,13 +271,6 @@ class CmdLineTest(unittest.TestCase):
+             self._check_script(zip_name, run_name, zip_name, zip_name, '',
+                                zipimport.zipimporter)
+ 
+-    def test_zipfile_error(self):
+-        with temp_dir() as script_dir:
+-            script_name = _make_test_script(script_dir, 'not_main')
+-            zip_name, run_name = make_zip_script(script_dir, 'test_zip', script_name)
+-            msg = "can't find '__main__' module in %r" % zip_name
+-            self._check_import_error(zip_name, msg)
+-
+     def test_module_in_package(self):
+         with temp_dir() as script_dir:
+             pkg_dir = os.path.join(script_dir, 'test_pkg')
+Index: b/Lib/test/test_zipimport_support.py
+===================================================================
+--- a/Lib/test/test_zipimport_support.py
++++ b/Lib/test/test_zipimport_support.py
+@@ -185,35 +185,6 @@ class ZipSupportTests(unittest.TestCase)
+             finally:
+                 del sys.modules["test_zipped_doctest"]
+ 
+-    def test_doctest_main_issue4197(self):
+-        test_src = textwrap.dedent("""\
+-                    class Test:
+-                        ">>> 'line 2'"
+-                        pass
+-
+-                    import doctest
+-                    doctest.testmod()
+-                    """)
+-        pattern = 'File "%s", line 2, in %s'
+-        with temp_dir() as d:
+-            script_name = make_script(d, 'script', test_src)
+-            rc, out, err = assert_python_ok(script_name)
+-            expected = pattern % (script_name, "__main__.Test")
+-            if verbose:
+-                print ("Expected line", expected)
+-                print ("Got stdout:")
+-                print (ascii(out))
+-            self.assertIn(expected.encode('utf-8'), out)
+-            zip_name, run_name = make_zip_script(d, "test_zip",
+-                                                script_name, '__main__.py')
+-            rc, out, err = assert_python_ok(zip_name)
+-            expected = pattern % (run_name, "__main__.Test")
+-            if verbose:
+-                print ("Expected line", expected)
+-                print ("Got stdout:")
+-                print (ascii(out))
+-            self.assertIn(expected.encode('utf-8'), out)
+-
+     def test_pdb_issue4201(self):
+         test_src = textwrap.dedent("""\
+                     def f():

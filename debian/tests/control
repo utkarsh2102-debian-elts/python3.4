@@ -1,0 +1,22 @@
+Tests: testsuite
+Depends: build-essential, locales, python3.4-dev, libpython3.4-testsuite, python3-gdbm
+# need to turn off apport
+Restrictions: needs-root
+
+Tests: testsuite-dbg
+Depends: build-essential, locales, python3.4-dev, python3.4-dbg, libpython3.4-testsuite, python3-gdbm-dbg, gdb
+# need to turn off apport
+Restrictions: needs-root
+
+Tests: failing-tests
+Depends: build-essential, python3.4-dev, libpython3.4-testsuite, python3-gdbm
+# need to turn off apport
+Restrictions: needs-root allow-stderr
+
+Tests: failing-tests-dbg
+Depends: build-essential, python3.4-dev, python3.4-dbg, libpython3.4-testsuite, python3-gdbm-dbg, gdb
+# need to turn off apport
+Restrictions: needs-root allow-stderr
+
+Tests: CVE-2019-9948.py
+Depends: @
