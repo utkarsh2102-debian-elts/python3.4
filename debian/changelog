@@ -1,3 +1,15 @@
+python3.4 (3.4.2-1+deb8u11) jessie-security; urgency=high
+
+  * Non-maintainer upload by the ELTS team.
+  * Add patch to remove the pydoc getfile feature.
+    (Fixes: CVE-2021-3426)
+  * Add patch to fix ReDoS in urllib
+    AbstractBasicAuthHandler. (Fixes: CVE-2021-3733)
+  * Add patch to fix http client infinite line reading (DoS)
+    after a HTTP 100 Continuefix. (Fixes: CVE-2021-3737)
+
+ -- Utkarsh Gupta <utkarsh@debian.org>  Wed, 03 Nov 2021 17:39:57 +0530
+
 python3.4 (3.4.2-1+deb8u10) jessie-security; urgency=high
 
   * Non-maintainer upload by the ELTS Team.
